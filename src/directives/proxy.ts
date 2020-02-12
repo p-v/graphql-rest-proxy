@@ -4,6 +4,7 @@ import { GraphQLArgument } from '../parser/interface'
 import { getConfig } from '../store'
 
 const methods = ['get', 'post', 'put', 'patch', 'delete']
+const BASE_ELEMENT = 'baseElement'
 
 export function getProxyDirective(args: GraphQLArgument[]) {
   const index = methods.findIndex(method => hasDirectiveArgument(args, method))
@@ -12,6 +13,11 @@ export function getProxyDirective(args: GraphQLArgument[]) {
   }
   const method = methods[index]
   const baseUri = getDirectiveArgument(args, method)
+
+  let baseElement: string;
+  if (hasDirectiveArgument(args, BASE_ELEMENT)) {
+    baseElement = getDirectiveArgument(args, BASE_ELEMENT)
+  }
 
   const getBaseOptions = () => ({
     uri: baseUri,
@@ -23,7 +29,13 @@ export function getProxyDirective(args: GraphQLArgument[]) {
     json: true,
   })
 
-  return async function proxy(parent: any, args: any, { req }: Context, { fieldName }: any) {
+  return async function proxy(parent: any, args: any, { req, res }: Context, { fieldName }: any) {
+    if (baseElement) {
+      res.locals = {
+        baseElement
+      }
+    }
+
     if (fieldName in parent) {
       return parent[fieldName]
     }
